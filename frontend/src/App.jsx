@@ -19,41 +19,47 @@ function App() {
     }
 
     setLoading(true);
+    setResult(null);
     
-    // We must use FormData to send files over HTTP
     const formData = new FormData();
     formData.append('cv', file);
     formData.append('jobDescription', jobDescription);
 
     try {
       const response = await axios.post('http://localhost:5000/api/analyze/match', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResult(response.data);
+      // Set the result to the AI data object returned by the backend
+      setResult(response.data.data);
     } catch (error) {
       console.error('Error uploading:', error);
-      alert('Failed to analyze CV. Is the backend running?');
+      alert('Failed to analyze CV. Check the backend terminal.');
     } finally {
       setLoading(false);
     }
   };
 
+  // Helper to determine score color
+  const getScoreColor = (score) => {
+    if (score >= 80) return '#4CAF50'; // Green
+    if (score >= 50) return '#FF9800'; // Orange
+    return '#F44336'; // Red
+  };
+
   return (
-    <div style={{ maxWidth: '600px', margin: '50px auto', fontFamily: 'sans-serif' }}>
-      <h1>CoreATS Matchmaker</h1>
-      <p>Upload your CV (PDF) and paste the Job Description to test the engine.</p>
+    <div style={{ maxWidth: '700px', margin: '50px auto', fontFamily: 'system-ui, sans-serif', color: '#333' }}>
+      <h1 style={{ textAlign: 'center' }}>CoreATS Matchmaker</h1>
+      <p style={{ textAlign: 'center', color: '#666' }}>Upload your CV and paste the Job Description to check your ATS alignment.</p>
       
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
         <div>
           <label><strong>Job Description:</strong></label><br />
           <textarea 
             rows="6" 
-            style={{ width: '100%', padding: '10px', marginTop: '5px' }} 
+            style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
             value={jobDescription}
             onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Paste the job requirements here..."
+            placeholder="Paste the target job requirements here..."
           />
         </div>
 
@@ -70,18 +76,52 @@ function App() {
         <button 
           type="submit" 
           disabled={loading}
-          style={{ padding: '10px 20px', cursor: 'pointer', backgroundColor: '#007BFF', color: '#FFF', border: 'none', borderRadius: '5px' }}
+          style={{ padding: '12px', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: loading ? '#9E9E9E' : '#007BFF', color: '#FFF', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}
         >
-          {loading ? 'Analyzing...' : 'Analyze Match'}
+          {loading ? 'Analyzing with AI...' : 'Scan Resume'}
         </button>
       </form>
 
+      {/* Results Dashboard */}
       {result && (
-        <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#f4f4f4', borderRadius: '5px' }}>
-          <h3>Analysis Result (Success!)</h3>
-          <p><strong>Message:</strong> {result.message}</p>
-          <p><strong>CV Length:</strong> {result.extractedCVLength} characters</p>
-          <p><strong>Preview:</strong> {result.previewCV}</p>
+        <div style={{ marginTop: '30px', padding: '25px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px', paddingBottom: '20px', borderBottom: '2px solid #e9ecef' }}>
+            <div style={{ 
+              width: '90px', height: '90px', 
+              borderRadius: '50%', 
+              backgroundColor: getScoreColor(result.matchPercentage),
+              color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center',
+              fontSize: '28px', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+            }}>
+              {result.matchPercentage}%
+            </div>
+            <div>
+              <h2 style={{ margin: '0 0 5px 0' }}>Match Score</h2>
+              <span style={{ color: '#666' }}>Based on semantic keyword alignment</span>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '20px' }}>
+            <h3 style={{ color: '#d32f2f', margin: '0 0 10px 0' }}>🚨 Missing Critical Keywords</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {result.missingKeywords?.length > 0 ? result.missingKeywords.map((kw, i) => (
+                <span key={i} style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '6px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: '500' }}>
+                  {kw}
+                </span>
+              )) : <span style={{ color: '#4CAF50' }}>No critical keywords missing!</span>}
+            </div>
+          </div>
+
+          <div>
+            <h3 style={{ color: '#007BFF', margin: '0 0 10px 0' }}>💡 Optimization Suggestions</h3>
+            <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
+              {result.suggestions?.map((sug, i) => (
+                <li key={i} style={{ marginBottom: '8px' }}>{sug}</li>
+              ))}
+            </ul>
+          </div>
+
         </div>
       )}
     </div>
