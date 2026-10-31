@@ -52,3 +52,37 @@ export const calculateATSScore = async (cvText, jobDescription) => {
         throw new Error("Failed to analyze CV with AI.");
     }
 };
+
+export const performGeneralAudit = async (cvText) => {
+    const prompt = `
+    You are an expert Applicant Tracking System (ATS) and Executive Resume Coach. 
+    Analyze the following CV text for general ATS readability, structure, and action verbs.
+    
+    Return a strict JSON object with this exact structure:
+    {
+        "healthScore": (number between 0 and 100),
+        "formattingIssues": (array of strings, flag missing contact info, weird characters, or structural parsing issues),
+        "weakVerbs": [
+            { "verb": (string, the weak verb found, e.g., "helped"), "suggestions": (array of 3 strong action verbs) }
+        ],
+        "missingSections": (array of strings, standard sections missing like "Education", "Experience", "Skills")
+    }
+
+    CV Text:
+    ${cvText}
+
+    Return ONLY valid JSON. Do not include markdown formatting or backticks.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return JSON.parse(response.text);
+    } catch (error) {
+        console.error("AI Audit Error:", error);
+        throw new Error("Failed to perform general audit with AI.");
+    }
+};

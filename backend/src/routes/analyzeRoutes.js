@@ -1,10 +1,10 @@
 import express from 'express';
 import { upload } from '../middlewares/upload.js';
-import { analyzeMatch } from '../controllers/analyzeController.js';
+import { analyzeMatch, auditCV } from '../controllers/analyzeController.js';
 
 const router = express.Router();
 
-// The upload.single('cv') expects the frontend to send the file in a form field named 'cv'
 router.post('/match', upload.single('cv'), analyzeMatch);
+router.post('/audit', upload.single('cv'), auditCV);
 
 export default router;

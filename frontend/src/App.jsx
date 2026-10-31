@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import axios from 'axios';
+import { 
+  FileText, Briefcase, Zap, AlertTriangle, 
+  CheckCircle, Sparkles, ScanLine, FileSearch, Layers
+} from 'lucide-react';
+import './App.css';
 
 function App() {
+  const [mode, setMode] = useState('matchmaker'); // 'matchmaker' or 'audit'
   const [file, setFile] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
   const [result, setResult] = useState(null);
@@ -11,10 +17,19 @@ function App() {
     setFile(e.target.files[0]);
   };
 
+  const handleModeSwitch = (newMode) => {
+    setMode(newMode);
+    setResult(null); // Clear previous results when switching modes
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file || !jobDescription) {
-      alert('Please provide both a CV and a Job Description.');
+    if (!file) {
+      alert('Please upload a CV.');
+      return;
+    }
+    if (mode === 'matchmaker' && !jobDescription) {
+      alert('Please provide a Job Description for the Matchmaker.');
       return;
     }
 
@@ -23,13 +38,14 @@ function App() {
     
     const formData = new FormData();
     formData.append('cv', file);
-    formData.append('jobDescription', jobDescription);
+    if (mode === 'matchmaker') formData.append('jobDescription', jobDescription);
+
+    const endpoint = mode === 'matchmaker' ? '/api/analyze/match' : '/api/analyze/audit';
 
     try {
-      const response = await axios.post('http://localhost:5000/api/analyze/match', formData, {
+      const response = await axios.post(`http://localhost:5000${endpoint}`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      // Set the result to the AI data object returned by the backend
       setResult(response.data.data);
     } catch (error) {
       console.error('Error uploading:', error);
@@ -39,91 +55,194 @@ function App() {
     }
   };
 
-  // Helper to determine score color
   const getScoreColor = (score) => {
-    if (score >= 80) return '#4CAF50'; // Green
-    if (score >= 50) return '#FF9800'; // Orange
-    return '#F44336'; // Red
+    if (score >= 80) return '#22c55e';
+    if (score >= 50) return '#f59e0b';
+    return '#ef4444';
   };
 
   return (
-    <div style={{ maxWidth: '700px', margin: '50px auto', fontFamily: 'system-ui, sans-serif', color: '#333' }}>
-      <h1 style={{ textAlign: 'center' }}>CoreATS Matchmaker</h1>
-      <p style={{ textAlign: 'center', color: '#666' }}>Upload your CV and paste the Job Description to check your ATS alignment.</p>
-      
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px', backgroundColor: '#fff', padding: '20px', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-        <div>
-          <label><strong>Job Description:</strong></label><br />
-          <textarea 
-            rows="6" 
-            style={{ width: '100%', padding: '10px', marginTop: '5px', borderRadius: '4px', border: '1px solid #ccc', boxSizing: 'border-box' }} 
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Paste the target job requirements here..."
-          />
-        </div>
+    <div className="app-container">
+      <header className="header">
+        <h1 className="flex-icon-title" style={{ color: 'var(--primary)' }}>
+          <ScanLine size={40} /> CoreATS
+        </h1>
+        <p>AI-driven resume optimization and ATS parsing</p>
+      </header>
 
-        <div>
-          <label><strong>Upload CV (PDF or Word):</strong></label><br />
-          <input 
-            type="file" 
-            accept=".pdf,.doc,.docx" 
-            onChange={handleFileChange} 
-            style={{ marginTop: '5px' }}
-          />
-        </div>
-
+      {/* Mode Switcher Tabs */}
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '30px' }}>
         <button 
-          type="submit" 
-          disabled={loading}
-          style={{ padding: '12px', cursor: loading ? 'not-allowed' : 'pointer', backgroundColor: loading ? '#9E9E9E' : '#007BFF', color: '#FFF', border: 'none', borderRadius: '5px', fontSize: '16px', fontWeight: 'bold' }}
+          onClick={() => handleModeSwitch('matchmaker')}
+          style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border)', background: mode === 'matchmaker' ? 'var(--primary)' : 'white', color: mode === 'matchmaker' ? 'white' : 'var(--text-main)', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          {loading ? 'Analyzing with AI...' : 'Scan Resume'}
+          <Briefcase size={18} /> Matchmaker
         </button>
-      </form>
+        <button 
+          onClick={() => handleModeSwitch('audit')}
+          style={{ padding: '10px 20px', borderRadius: '8px', border: '1px solid var(--border)', background: mode === 'audit' ? 'var(--primary)' : 'white', color: mode === 'audit' ? 'white' : 'var(--text-main)', cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
+          <FileSearch size={18} /> General Audit
+        </button>
+      </div>
+      
+      <main className="content-grid">
+        {/* Left Column: Input Form */}
+        <section className="card">
+          <form onSubmit={handleSubmit}>
+            {mode === 'matchmaker' && (
+              <div className="input-group">
+                <label className="flex-icon-title" style={{ justifyContent: 'flex-start' }}>
+                  <Briefcase size={18} /> Target Job Description
+                </label>
+                <textarea 
+                  rows="8" 
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
+                  placeholder="Paste the job requirements, skills, and responsibilities here..."
+                />
+              </div>
+            )}
 
-      {/* Results Dashboard */}
-      {result && (
-        <div style={{ marginTop: '30px', padding: '25px', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
-          
-          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '25px', paddingBottom: '20px', borderBottom: '2px solid #e9ecef' }}>
-            <div style={{ 
-              width: '90px', height: '90px', 
-              borderRadius: '50%', 
-              backgroundColor: getScoreColor(result.matchPercentage),
-              color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center',
-              fontSize: '28px', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-            }}>
-              {result.matchPercentage}%
+            <div className="input-group">
+              <label className="flex-icon-title" style={{ justifyContent: 'flex-start' }}>
+                <FileText size={18} /> Upload Resume
+              </label>
+              <input 
+                type="file" 
+                accept=".pdf,.doc,.docx" 
+                onChange={handleFileChange} 
+              />
             </div>
-            <div>
-              <h2 style={{ margin: '0 0 5px 0' }}>Match Score</h2>
-              <span style={{ color: '#666' }}>Based on semantic keyword alignment</span>
+
+            <button type="submit" className="btn-primary" disabled={loading}>
+              <div className="btn-content">
+                {loading ? <Zap className="skeleton-pulse" size={20} /> : <Sparkles size={20} />}
+                {loading ? 'Analyzing with AI...' : `Run ${mode === 'matchmaker' ? 'Match' : 'Audit'}`}
+              </div>
+            </button>
+          </form>
+        </section>
+
+        {/* Right Column: Results Dashboard */}
+        <section className="card">
+          {!result && !loading && (
+            <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '15px' }}>
+              <ScanLine size={48} style={{ opacity: 0.3 }} />
+              <p>Upload your documents to see the {mode === 'matchmaker' ? 'ATS analysis' : 'Audit report'} here.</p>
             </div>
-          </div>
+          )}
 
-          <div style={{ marginBottom: '20px' }}>
-            <h3 style={{ color: '#d32f2f', margin: '0 0 10px 0' }}>🚨 Missing Critical Keywords</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              {result.missingKeywords?.length > 0 ? result.missingKeywords.map((kw, i) => (
-                <span key={i} style={{ backgroundColor: '#ffebee', color: '#c62828', padding: '6px 12px', borderRadius: '20px', fontSize: '14px', fontWeight: '500' }}>
-                  {kw}
-                </span>
-              )) : <span style={{ color: '#4CAF50' }}>No critical keywords missing!</span>}
+          {loading && (
+            <div className="skeleton-pulse animate-slide-up">
+              <div className="score-card">
+                <div className="skeleton-box skeleton-circle"></div>
+                <div style={{ flex: 1 }}>
+                  <div className="skeleton-box skeleton-line short"></div>
+                  <div className="skeleton-box skeleton-line"></div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          <div>
-            <h3 style={{ color: '#007BFF', margin: '0 0 10px 0' }}>💡 Optimization Suggestions</h3>
-            <ul style={{ margin: 0, paddingLeft: '20px', lineHeight: '1.6' }}>
-              {result.suggestions?.map((sug, i) => (
-                <li key={i} style={{ marginBottom: '8px' }}>{sug}</li>
-              ))}
-            </ul>
-          </div>
+          {/* Results: Matchmaker Mode */}
+          {result && !loading && mode === 'matchmaker' && (
+            <div className="dashboard-results animate-slide-up">
+              <div className="score-card">
+                <div 
+                  className="score-circle" 
+                  style={{ 
+                    backgroundColor: getScoreColor(result.matchPercentage),
+                    boxShadow: `0 8px 16px -4px ${getScoreColor(result.matchPercentage)}60`
+                  }}
+                >
+                  {result.matchPercentage}%
+                </div>
+                <div className="score-text">
+                  <h2>Match Score</h2>
+                  <p>Based on semantic keyword alignment.</p>
+                </div>
+              </div>
 
-        </div>
-      )}
+              <h3 className="section-title" style={{ color: 'var(--danger-text)' }}>
+                <AlertTriangle size={20} /> Missing Keywords
+              </h3>
+              <div className="chip-container">
+                {result.missingKeywords?.length > 0 ? result.missingKeywords.map((kw, i) => (
+                  <span key={i} className="chip">{kw}</span>
+                )) : (
+                  <span style={{ color: 'var(--success-text)', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '600' }}>
+                    <CheckCircle size={18} /> All critical keywords found!
+                  </span>
+                )}
+              </div>
+
+              <h3 className="section-title" style={{ color: 'var(--primary)' }}>
+                <Sparkles size={20} /> Optimization Strategy
+              </h3>
+              <ul className="suggestions-list">
+                {result.suggestions?.map((sug, i) => (
+                  <li key={i}>{sug}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Results: General Audit Mode */}
+          {result && !loading && mode === 'audit' && (
+            <div className="dashboard-results animate-slide-up">
+              <div className="score-card">
+                <div 
+                  className="score-circle" 
+                  style={{ 
+                    backgroundColor: getScoreColor(result.healthScore),
+                    boxShadow: `0 8px 16px -4px ${getScoreColor(result.healthScore)}60`
+                  }}
+                >
+                  {result.healthScore}%
+                </div>
+                <div className="score-text">
+                  <h2>Overall Health</h2>
+                  <p>Based on ATS readability, structure, and action verbs.</p>
+                </div>
+              </div>
+
+              {/* Missing Sections */}
+              <h3 className="section-title" style={{ color: 'var(--danger-text)' }}>
+                <Layers size={20} /> Missing Standard Sections
+              </h3>
+              <div className="chip-container">
+                {result.missingSections?.length > 0 ? result.missingSections.map((sec, i) => (
+                  <span key={i} className="chip">{sec}</span>
+                )) : <span style={{ color: 'var(--success-text)' }}>Core sections present!</span>}
+              </div>
+
+              {/* Formatting Issues */}
+              <h3 className="section-title" style={{ color: 'var(--primary)' }}>
+                <AlertTriangle size={20} /> Formatting Issues
+              </h3>
+              <ul className="suggestions-list" style={{ marginBottom: '30px' }}>
+                {result.formattingIssues?.length > 0 ? result.formattingIssues.map((issue, i) => (
+                  <li key={i}>{issue}</li>
+                )) : <li style={{ color: 'var(--success-text)' }}>No major parsing issues detected.</li>}
+              </ul>
+
+              {/* Weak Verbs */}
+              <h3 className="section-title" style={{ color: '#f59e0b' }}>
+                <Zap size={20} /> Weak Action Verbs
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {result.weakVerbs?.length > 0 ? result.weakVerbs.map((item, i) => (
+                  <div key={i} style={{ padding: '12px', background: '#fef3c7', borderRadius: '8px', border: '1px solid #fde68a' }}>
+                    <strong>Replace:</strong> <span style={{ color: '#b45309', textDecoration: 'line-through' }}>{item.verb}</span><br/>
+                    <strong>Try:</strong> {item.suggestions?.join(', ')}
+                  </div>
+                )) : <span style={{ color: 'var(--success-text)' }}>Great use of strong action verbs!</span>}
+              </div>
+            </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

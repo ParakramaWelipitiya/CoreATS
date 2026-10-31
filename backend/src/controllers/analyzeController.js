@@ -1,5 +1,5 @@
 import pdfParse from 'pdf-parse';
-import { calculateATSScore } from '../services/aiService.js';
+import { calculateATSScore, performGeneralAudit } from '../services/aiService.js';
 
 export const analyzeMatch = async (req, res) => {
     try {
@@ -22,6 +22,27 @@ export const analyzeMatch = async (req, res) => {
 
     } catch (error) {
         console.error('Error analyzing CV:', error);
+        res.status(500).json({ error: 'Failed to process the CV file.' });
+    }
+};
+
+export const auditCV = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: 'Please upload a CV file.' });
+        }
+
+        const pdfData = await pdfParse(req.file.buffer);
+        const cvText = pdfData.text;
+
+        const aiAudit = await performGeneralAudit(cvText);
+
+        res.status(200).json({
+            status: 'success',
+            data: aiAudit
+        });
+    } catch (error) {
+        console.error('Error auditing CV:', error);
         res.status(500).json({ error: 'Failed to process the CV file.' });
     }
 };
