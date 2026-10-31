@@ -1,3 +1,5 @@
+<img width="1782" height="460" alt="image" src="https://github.com/user-attachments/assets/ab923d5f-90f4-4539-a753-386a34105b50" />
+
 # CoreATS
 
 CoreATS is a AI-powered Applicant Tracking System (ATS) optimization tool. It is designed to help users evaluate and improve their resumes through semantic analysis, structural audits, and actionable optimization strategies. 
