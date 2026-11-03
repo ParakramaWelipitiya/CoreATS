@@ -10,6 +10,7 @@ The application utilizes a privacy-first architecture, ensuring that all uploade
 
 *   **Matchmaker Engine:** Compares a candidate's CV against a target job description to generate a semantic alignment score. It identifies missing critical keywords and provides a tailored optimization strategy.
 *   **General ATS Audit:** Evaluates the structural health of a CV independently of a job description. It detects missing standard sections (e.g., Education, Experience), identifies formatting issues that could break an ATS parser, and suggests strong replacements for weak action verbs.
+*   **Blueprint Generation:** Generates a completely rewritten, highly optimized CV template in Markdown format based strictly on the user's old CV and a target job description.
 *   **Privacy-First Processing:** Implements memory-buffer processing via Multer. Documents are parsed and immediately discarded post-analysis, ensuring complete user data privacy.
 *   **Modern Asynchronous UI:** Features a responsive React interface with real-time skeleton loading states, state-driven mode switching, and organized metric dashboards.
 
@@ -65,7 +66,9 @@ npm run dev
 
 * **General Audit:** Upload a CV directly to check for formatting errors and weak action verbs.
 
+* **CV Blueprint:** Paste a target job description and upload your existing CV. Click "Generate New CV" to receive an AI-optimized, rewritten CV
+
 * Review the AI-generated dashboard containing the health score, missing keywords, and structural recommendations.
 
 ## Future Roadmap
-* **Blueprint Generation:** Implement an AI mode capable of generating custom, highly optimized CV templates based strictly on a provided job description.
+* **Database Integration:** Integrate PostgreSQL for optional, user-consented history tracking and session persistence.
