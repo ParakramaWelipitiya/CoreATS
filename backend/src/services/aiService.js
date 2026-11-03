@@ -86,3 +86,37 @@ export const performGeneralAudit = async (cvText) => {
         throw new Error("Failed to perform general audit with AI.");
     }
 };
+
+export const generateBlueprint = async (cvText, jobDescription) => {
+    const prompt = `
+    You are an expert Executive Resume Writer. 
+    I will provide a candidate's existing CV and a target Job Description.
+    Your task is to rewrite and optimize the CV to perfectly align with the Job Description while remaining truthful.
+    
+    Return a strict JSON object with this exact structure:
+    {
+        "optimizedCV": (string, the fully rewritten CV in Markdown format. Use ## for sections like Experience and Skills, and bullet points for accomplishments starting with strong action verbs),
+        "summaryOfChanges": (array of strings, exactly 3 bullet points explaining the major improvements made)
+    }
+
+    Job Description:
+    ${jobDescription}
+
+    Original CV:
+    ${cvText}
+
+    Return ONLY valid JSON. Do not include markdown formatting or backticks around the JSON block.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: "application/json" }
+        });
+        return JSON.parse(response.text);
+    } catch (error) {
+        console.error("AI Blueprint Error:", error);
+        throw new Error("Failed to generate CV blueprint.");
+    }
+};

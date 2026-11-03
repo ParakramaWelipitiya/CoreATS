@@ -1,5 +1,5 @@
 import pdfParse from 'pdf-parse';
-import { calculateATSScore, performGeneralAudit } from '../services/aiService.js';
+import { calculateATSScore, performGeneralAudit, generateBlueprint } from '../services/aiService.js';
 
 export const analyzeMatch = async (req, res) => {
     try {
@@ -44,5 +44,26 @@ export const auditCV = async (req, res) => {
     } catch (error) {
         console.error('Error auditing CV:', error);
         res.status(500).json({ error: 'Failed to process the CV file.' });
+    }
+};
+
+export const buildBlueprint = async (req, res) => {
+    try {
+        if (!req.file || !req.body.jobDescription) {
+            return res.status(400).json({ error: 'Please provide both a CV and a job description.' });
+        }
+
+        const pdfData = await pdfParse(req.file.buffer);
+        const cvText = pdfData.text;
+
+        const aiBlueprint = await generateBlueprint(cvText, req.body.jobDescription);
+
+        res.status(200).json({
+            status: 'success',
+            data: aiBlueprint
+        });
+    } catch (error) {
+        console.error('Error generating blueprint:', error);
+        res.status(500).json({ error: 'Failed to process the blueprint.' });
     }
 };
